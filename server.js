@@ -17,8 +17,8 @@ const Place = require('./domain/place')
 const axios = require('axios');
 var stringify = require('json-stringify-safe');
 
-//mongoose.connect('mongodb://root:123456a@ds127429.mlab.com:27429/user', { useNewUrlParser: true })
-//mongoose.set('useCreateIndex', true);
+mongoose.connect('mongodb://root:123456a@ds241977.mlab.com:41977/pet-place', { useNewUrlParser: true })
+mongoose.set('useCreateIndex', true);
 
 // CONFIGURANDO O SERVIÇO ---------------------
 // usando o parser para pegar a informação do POST
@@ -48,59 +48,139 @@ router.get('/health', (req, res) => {
     res.json({ message: 'API OK!' })
 })
 
+var middleware = function (req, res, next) {
+
+    //if(req.query.cidade != null || req.query.cidade != "" || req.query.cidade != undefined){
+        
+    if(!req.query.lat || !req.query.lon){
+        res.status(403).json({message: "Latitude e Longitude devem ser informados!"})
+    }else{
+        next()
+    }
+} 
+
 var middlewarePost = function (req, res, next) {
-    console.log(req.body.name + req.body.address.lat + req.body.address.lon)
-    
-    var place = new Place()
-    place.name = req.body.name
-    place.address.lat = req.body.address.lat
-    place.address.lon = req.body.address.lon
-    
-    console.log( place.name +  place.address.lat +  place.address.lon)
-    // if(req.body.password.length >= 6){
-    //   next()
-    // }else{
-    //   res.status(400).json({message:"A senha deve ter 6 caracteres."}) 
-    // }
+    if (!req.body.name ||
+        !req.body.address.lat ||
+        !req.body.address.lat ||
+        !req.body.address.address ||
+        !req.body.address.city ||
+        !req.body.address.state ||
+        !req.body.address.zip_code ||
+        !req.body.photo_url ||
+        !req.body.others_informations){
+            console.log(req)
+            res.status(400).json({message: "Dados faltando!"}) 
+    }
+    next()
 }
 
 // rotas terminadas em /places
 router.route('/places')
-// criar usuário (POST http://localhost:8000/api/places)
-.post(middlewarePost, function (req, res) { 
-  // criar uma nova instância do Usuário
-  var place = new Place()
+    // criar usuário (POST http://localhost:8000/api/places)
+    .post(middlewarePost, function (req, res) { 
+        // criar uma nova instância do Usuário
+        var place = new Place()
 
-   // informações do usuário (na request)
-   place.name = req.body.name
-   place.address.lat = req.body.address.lat
-   place.address.lon = req.body.address.lon
+        // informações do usuário (na request)
+        place.name = req.body.name
+        place.address.lat = req.body.address.lat
+        place.address.lon = req.body.address.lon
+        place.address.address = req.body.address.address
+        place.address.city = req.body.address.city
+        place.address.state = req.body.address.state
+        place.address.zip_code = req.body.address.zip_code
+        place.photo_url = req.body.photo_url
+        place.agua = req.body.agua
+        place.seguro = req.body.seguro
+        place.pet_solto = req.body.pet_solto
+        place.limpo = req.body.limpo
+        place.banheiro = req.body.banheiro
+        place.conveniencias = req.body.conveniencias
+        place.others_informations = req.body.others_informations
 
-  // salvar e verificar erros
-  user.save(function (err) {
-      if (err) {
-          // usuário duplicado
-          if (err.code === 11000) {
-              return res.json({
-              success: false,
-              message: 'Um usuário com esse username já existe.'
-              })
-          } else {
-              return res.send(err)
-          }
-      }
-      res.json({ message: 'Usuário criado!' }).send()
-  })
-})
+        // salvar e verificar erros
+        place.save(function (err) {
+            if (err) {
+                // usuário duplicado
+                if (err.code === 11000) {
+                    return res.json({
+                    success: false,
+                    message: 'Um Place com esses dados já existe.'
+                    })
+                } else {
+                    return res.send(err)
+                }
+            }
+            res.json({ message: 'Place criado!' }).send()
+    })
+    })
 
-// returna todos os usuários (GET http://localhost:8000/api/users)
-.get(function (req, res) {
-  User.find(function (err, users) {
-    if (err) res.send(err)
-    // retorna os usuários
-    res.json(users)
-  })
-})
+    // returna todos os usuários (GET http://localhost:8000/api/places)
+    .get(function (req, res) {
+
+        if(!req.query.lat || !req.query.lon){
+            Place.find(function (err, place) {
+                if (err) res.send(err)
+                // retorna os usuários
+                res.json(place)
+            })
+        }else{
+            console.log("tem lat e lon")
+
+            var lat = req.query.lat 
+            var lon = req.query.lon
+
+            // 0.04504504505
+            // lat > minLat && lat < maxLat && lon > minLon && lon < maxLon
+            
+            lat = parseFloat(lat)
+            lon = parseFloat(lon)
+
+            var minLat = lat - 0.04504504505
+            var minLon = lon - 0.04504504505
+
+            var maxLat = lat + 0.04504504505
+            var maxLon = lon + 0.04504504505
+
+            Place.find( { 
+                $and: [ 
+                    { "address.lat": { $gte: minLat } }, 
+                    { "address.lat": { $lte: maxLat } }, 
+                    { "address.lon": { $gte: minLon } }, 
+                    { "address.lon": { $lte: maxLon } } 
+                ] 
+            }, (err, place )=> {
+                
+                if (res.status(200)){
+                    var element = []
+
+                    for (let index = 0; index < place.length; index++) {
+                        element.push({
+                            id: place[index].id,
+                            name: place[index].name,
+                            lat: place[index].address.lat,
+                            lon: place[index].address.lon
+                        })
+                    }
+    
+                    res.status(200).json({places: element})
+                }                
+            })
+
+        }
+    })
+
+router.route('/place/:id')
+    // retorna o usuário com o id (GET http://localhost:8000/api/places/:id)
+    .get(function (req, res) {
+        Place.findById(req.params.id, function (err, place) {
+            if (err) res.send(err)
+            // retorna o place
+            res.json(place)
+        })
+    })
+ 
 
 // as rotas serão prefixadas com /api
 app.use('/api', router)
