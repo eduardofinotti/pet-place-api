@@ -9,13 +9,13 @@ const PlaceSchema = new Schema({
 
     address: {
       lat: Number,
-      lat: Number,
+      lon: Number,
       address: String,
       city: String,
       state: String,
       zip_code: String
     },
-    
+
     photo_url: String,
 
     sombra: Boolean,
@@ -24,7 +24,8 @@ const PlaceSchema = new Schema({
     pet_solto: Boolean,
     limpo: Boolean,
     banheiro: Boolean,
-    conveniencias: Boolean
+    conveniencias: Boolean,
+    others_informations: String
   })
 
 // // gerar o hash do password antes de salvar
