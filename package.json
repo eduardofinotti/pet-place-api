@@ -4,7 +4,8 @@
   "description": "API to Pet Place app",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node index.test | tap-spec",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -17,11 +18,10 @@
   },
   "homepage": "https://github.com/eduardofinotti/pet-place-api#readme",
   "dependencies": {
-    "express": "^4.17.1",
-    "axios": "^0.19.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "circular-json": "^0.5.9",
+    "express": "^4.17.1",
     "mongoose": "^5.5.11",
     "morgan": "^1.9.1",
     "supertest": "^4.0.2",

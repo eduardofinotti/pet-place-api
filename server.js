@@ -60,6 +60,7 @@ var middleware = function (req, res, next) {
 } 
 
 var middlewarePost = function (req, res, next) {
+
     if (!req.body.name ||
         !req.body.address.lat ||
         !req.body.address.lat ||
@@ -69,8 +70,8 @@ var middlewarePost = function (req, res, next) {
         !req.body.address.zip_code ||
         !req.body.photo_url ||
         !req.body.others_informations){
-            console.log(req)
-            res.status(400).json({message: "Dados faltando!"}) 
+            res.status(400).send({message: "Dados faltando!"})
+            return
     }
     next()
 }
@@ -100,7 +101,7 @@ router.route('/places')
         place.others_informations = req.body.others_informations
 
         // salvar e verificar erros
-        place.save(function (err) {
+        place.save(function (err, result) {
             if (err) {
                 // usuário duplicado
                 if (err.code === 11000) {
@@ -112,8 +113,12 @@ router.route('/places')
                     return res.send(err)
                 }
             }
-            res.json({ message: 'Place criado!' }).send()
-    })
+            res.json(
+                    {
+                        message: 'Place criado!', 
+                        id: result._id }).send()
+                    }
+        )
     })
 
     // returna todos os usuários (GET http://localhost:8000/api/places)
@@ -125,24 +130,22 @@ router.route('/places')
                 // retorna os usuários
                 res.json(place)
             })
-        }else{
-            console.log("tem lat e lon")
 
+        }else{
             var lat = req.query.lat 
             var lon = req.query.lon
-
-            // 0.04504504505
-            // lat > minLat && lat < maxLat && lon > minLon && lon < maxLon
             
             lat = parseFloat(lat)
             lon = parseFloat(lon)
 
+            // 0.04504504505 = 5km
             var minLat = lat - 0.04504504505
             var minLon = lon - 0.04504504505
 
             var maxLat = lat + 0.04504504505
             var maxLon = lon + 0.04504504505
 
+            // lat > minLat && lat < maxLat && lon > minLon && lon < maxLon
             Place.find( { 
                 $and: [ 
                     { "address.lat": { $gte: minLat } }, 
@@ -180,7 +183,56 @@ router.route('/place/:id')
             res.json(place)
         })
     })
- 
+
+// rotas terminadas em /places
+router.route('/places/sugestion')
+    // returna todos os usuários (GET http://localhost:8000/api/places/sugestion)
+    .get(middleware, function (req, res) {
+
+        var lat = req.query.lat 
+        var lon = req.query.lon
+        
+        lat = parseFloat(lat)
+        lon = parseFloat(lon)
+
+        // 0.00900900901 = 1km
+        var minLat = lat - 0.00900900901
+        var minLon = lon - 0.00900900901
+
+        var maxLat = lat + 0.00900900901
+        var maxLon = lon + 0.00900900901
+
+        // lat > minLat && lat < maxLat && lon > minLon && lon < maxLon
+        Place.find( { 
+            $and: [ 
+                { "address.lat": { $gte: minLat } }, 
+                { "address.lat": { $lte: maxLat } }, 
+                { "address.lon": { $gte: minLon } }, 
+                { "address.lon": { $lte: maxLon } } 
+            ] 
+        }, (err, place )=> {
+            
+            if (res.status(200)){
+                var element = []
+
+                for (let index = 0; index < place.length; index++) {
+                    element.push({
+                        id: place[index].id,
+                        name: place[index].name,
+                        address: place[index].address.address,
+                        city: place[index].address.city,
+                        lat: place[index].address.lat,
+                        lon: place[index].address.lon
+                    })
+                }
+
+                res.status(200).json({sugestion: element})
+            }                
+        })
+        
+    })
+
+module.exports = app
 
 // as rotas serão prefixadas com /api
 app.use('/api', router)
@@ -188,3 +240,5 @@ app.use('/api', router)
 // INICIANDO O SERVIÇO
 // ===============================
 app.listen(port)
+
+exports = module.exports = app;
