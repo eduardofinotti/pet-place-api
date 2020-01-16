@@ -14,8 +14,8 @@ const cjson = require('circular-json');
 // ======================================
 const Place = require('./domain/place')
 
-const axios = require('axios');
-var stringify = require('json-stringify-safe');
+// const axios = require('axios');
+// var stringify = require('json-stringify-safe');
 
 mongoose.connect('mongodb://root:123456a@ds241977.mlab.com:41977/pet-place', { useNewUrlParser: true })
 mongoose.set('useCreateIndex', true);
